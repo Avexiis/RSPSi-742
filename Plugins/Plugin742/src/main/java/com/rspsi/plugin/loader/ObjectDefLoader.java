@@ -39,7 +39,7 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 	private int size;
 
 	public void decodeObjects(Index index) {
-		size = index.getLastArchive().getId() * 256 + index.getLastArchive().getLastFile().getId();
+		size = index.getLastArchive().getId() * 256 + index.getLastArchive().getLastFile().getId() + 1;
 		for (int id = 0; id < size; id++) {
 			int archiveId = Miscellaneous.getConfigArchive(id, 8);
 			Archive archive = index.getArchive(archiveId);
@@ -79,7 +79,7 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 						int modelsLength = buffer.get() & 0xff;
 						modelIds[type] = new int[modelsLength];
 						for (int model = 0; modelsLength > model; model++) {
-							modelIds[type][model] = buffer.getShort() & 0xffff;
+							modelIds[type][model] = readBigSmart(buffer);
 						}
 					}
 					definition.setModelIds(IntStream.range(0, modelIds.length).map(index -> modelIds[index][0]).toArray());
@@ -93,7 +93,7 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 						int modelsLength = buffer.get() & 0xff;
 						modelIds[type] = new int[modelsLength];
 						for (int model = 0; modelsLength > model; model++) {
-							modelIds[type][model] = buffer.getShort() & 0xffff;
+							modelIds[type][model] = readBigSmart(buffer);
 						}
 					}
 					definition.setModelIds(IntStream.range(0, modelIds.length).map(index -> modelIds[index][0]).toArray());
@@ -143,7 +143,10 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 				} else if (opcode == 39) {
 					definition.setLightDiffusion((byte) (buffer.get()));
 				} else if (opcode >= 30 && opcode < 39) {
-					String[] interactions = new String[10];
+					String[] interactions = definition.getInteractions();
+					if (interactions == null) {
+						interactions = new String[10];
+					}
 					interactions[opcode - 30] = ByteBufferUtils.getOSRSString(buffer);
 					if (interactions[opcode - 30].equalsIgnoreCase("hidden")) {
 						interactions[opcode - 30] = null;
@@ -348,6 +351,15 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 		}
 		return definition;
 	}
+
+	private int readBigSmart(ByteBuffer buffer) {
+		int peek = buffer.get(buffer.position());
+		if (peek >= 0) {
+			return buffer.getShort() & 0xFFFF;
+		}
+		return buffer.getInt() & Integer.MAX_VALUE;
+	}
+
 
 	@Override
 	public ObjectDefinition forId(int id) {

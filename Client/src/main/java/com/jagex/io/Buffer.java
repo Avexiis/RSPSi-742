@@ -199,7 +199,7 @@ public final class Buffer {
 	}
 	
 	public int readBigSmart() {
-		int value = payload[position] & 0xff;
+		int value = payload[position];
 		if (value >= 0)
 			return readUShort() & 0xFFFF;
 

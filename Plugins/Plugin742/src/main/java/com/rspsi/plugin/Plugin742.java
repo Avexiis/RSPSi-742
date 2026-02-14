@@ -1,6 +1,5 @@
 package com.rspsi.plugin;
 
-import org.displee.CacheLibrary;
 import org.displee.cache.index.Index;
 
 import com.jagex.Client;
@@ -25,8 +24,8 @@ import com.rspsi.plugin.loader.TextureLoaderOSRS;
 import com.rspsi.plugin.loader.VarbitLoaderOSRS;
 import com.rspsi.plugins.ClientPlugin;
 
-//For 718
-public class Plugin667 implements ClientPlugin {
+// For 742
+public class Plugin742 implements ClientPlugin {
 
 	private AnimationFrameLoader frameLoader;
 	private FloorDefLoader floorLoader;
@@ -38,21 +37,21 @@ public class Plugin667 implements ClientPlugin {
 	private TextureLoaderOSRS textureLoader;
 	private AnimationSkinLoader skeletonLoader;
 	private RSAreaLoaderOSRS areaLoader;
-	
+
 	@Override
 	public void initializePlugin() {
 		objLoader = new ObjectDefLoader();
 		floorLoader = new FloorDefLoader();
 		frameLoader = new AnimationFrameLoader();
 		animDefLoader = new AnimationDefLoader();
-		
+
 		mapIndexLoader = new MapIndexLoaderOSRS();
 		textureLoader = new TextureLoaderOSRS();
 		skeletonLoader = new AnimationSkinLoader();
 		graphicLoader = new SpotAnimationLoader();
 		varbitLoader = new VarbitLoaderOSRS();
 		areaLoader = new RSAreaLoaderOSRS();
-		
+
 		MapIndexLoader.instance = mapIndexLoader;
 		GraphicLoader.instance = graphicLoader;
 		VariableBitLoader.instance = varbitLoader;
@@ -67,7 +66,7 @@ public class Plugin667 implements ClientPlugin {
 
 	@Override
 	public void onGameLoaded(Client client) {
-		
+
 		frameLoader.init(2500);
 
 		Index configIndex = client.getCache().readFile(CacheFileType.CONFIG);
@@ -96,7 +95,7 @@ public class Plugin667 implements ClientPlugin {
 	@Override
 	public void onResourceDelivered(ResourceResponse arg0) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 }

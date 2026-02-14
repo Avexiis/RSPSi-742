@@ -29,7 +29,7 @@ public class FloorDefLoader extends com.jagex.cache.loader.floor.FloorDefinition
 	}
 
 	public void decodeUnderlays(Archive archive) {
-		int size = archive.getLastFile().getId();
+		int size = archive.getLastFile().getId() + 1;
 		List<Floor> floors = Lists.newArrayList();
 		for (int id = 0; id < size; id++) {
 			File underlay = archive.getFile(id);
@@ -44,7 +44,7 @@ public class FloorDefLoader extends com.jagex.cache.loader.floor.FloorDefinition
 	}
 
 	public void decodeOverlays(Archive archive) {
-		int size = archive.getLastFile().getId();
+		int size = archive.getLastFile().getId() + 1;
 		List<Floor> floors = Lists.newArrayList();
 		for (int id = 0; id < size; id++) {
 			File overlays = archive.getFile(id);
@@ -63,7 +63,7 @@ public class FloorDefLoader extends com.jagex.cache.loader.floor.FloorDefinition
 
 		int last = -1;
 		while (true) {
-			int opcode = buffer.get();
+			int opcode = buffer.get() & 0xFF;
 			if (opcode == 0)
 				break;
 			if (opcode == 1) {
@@ -121,7 +121,7 @@ public class FloorDefLoader extends com.jagex.cache.loader.floor.FloorDefinition
 		Floor floor = new Floor();
 		int last = -1;
 		while (true) {
-			int opcode = buffer.get();
+			int opcode = buffer.get() & 0xFF;
 			if (opcode == 0)
 				break;
 			if (opcode == 1) {

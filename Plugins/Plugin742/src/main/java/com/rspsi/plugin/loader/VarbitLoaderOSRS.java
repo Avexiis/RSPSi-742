@@ -38,10 +38,13 @@ public class VarbitLoaderOSRS extends VariableBitLoader {
     }
 
     public void decodeVarbits(Index index) {
-        int size = index.getArchives().length * 0x3ff;
+        int size = index.getArchives().length * 0x400;
         VariableBits[] varbits = new VariableBits[size];
 
         for(int i = 0; i < size; i++) {
+            if (index.getArchive(i >>> 10) == null) {
+                continue;
+            }
             File file = index.getArchive(i >>> 10).getFile(i & 0x3FF);
             if (Objects.nonNull(file) && Objects.nonNull(file.getData())) {
                 ByteBuffer buff = ByteBuffer.wrap(file.getData());
