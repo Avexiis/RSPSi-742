@@ -1,4 +1,6 @@
 # RSPSi-742
+![Custom Lletya made with RSPSi-742](https://i.imgur.com/vHNucy9.jpeg)
+
 **<u>The following has been changed from the original**</u><br><br>
 Added client-side 742 compatibility in:
 - `Cache.java`
