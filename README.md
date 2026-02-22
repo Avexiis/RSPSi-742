@@ -1,8 +1,4 @@
 # RSPSi-742
-<div align="left">
-  <video src="https://i.imgur.com/bxjQ9k1.mp4" controls width="600"></video>
-</div>
-
 **<u>The following has been changed from the original**</u><br><br>
 Added client-side 742 compatibility in:
 - `Cache.java`
