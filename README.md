@@ -56,3 +56,10 @@ All other plugin files remain the same as they were in the 667 build.
 
 This project uses JavaFX components, which are only available from the above linked JDK / JRE.
 
+# Credits
+- [The original RSPSi](https://github.com/RSPSi/RSPSi) - Creating the editor.
+- [2011Scape/RSPSi-667](https://github.com/2011Scape/RSPSi-667) - Extending the editor closer to the state needed for 742.
+- [LostCityRS/RS742](https://github.com/LostCityRS/RS742) - Amazing deobfuscated 742 client used for reference to make this work.
+
+A massive thank-you to all the talented developers who put their time and effort into these projects which let me get this done. It could never have been done without their hard work.
+
