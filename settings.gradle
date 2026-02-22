@@ -3,8 +3,6 @@ rootProject.name = 'RSPSiSuite'
 include ':Client'
 include ':Editor'
 include ':Plugins'
-include ':RS742'
 include ':RS-Cache-Library'
-
 include 'Plugins:Plugin742'
 
