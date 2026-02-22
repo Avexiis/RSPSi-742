@@ -33,15 +33,15 @@ All other plugin files remain the same as they were in the 667 build.
 - This has only been tested using the below resources. Results with other caches may vary.
 
 # Disclaimers
-- This build is **<u>EXPERIMENTAL</u>**, it pushes the limit of what the internal client can achieve.
+- This build is **<u>EXPERIMENTAL</u>**, it (in my opinion) pushes the limit of what the internal client can achieve.
 <br><br>
 - This build **WILL** fire console errors while you work, mostly around mesh face issues. The majority of them can be ignored unless workspace issues occur.
   <br><br>
-- Some models may appear incorrect or have missing textures. This was somewhat present in the 667 build, but even more so in 742.
+- Some models may appear incorrect or have missing textures. This was somewhat present in the 667 build, but even more so in 742. These issues are the cause of the console errors.
   <br><br>
 - Your real client will not fail to decode meshes the same way this might, however, always double-check once you import that nothing was missed or removed.
   <br><br>
-- RSPSi does not contain a method to modify under-map landscape. This is usually a third data file, as it sits, maps with water will not have under-map landscape generated and will appear incorrect with HD water enabled.
+- RSPSi does not contain a method to modify under-map landscape. This is usually (I think?) a third data file. As it sits, maps with water will not have under-map landscape generated and will appear incorrect with HD water enabled.
   <br><br>
 - If an estimate for "how functional is this?" were given, it would be `75%-80%` due to the remaining bugs.
   <br><br>
