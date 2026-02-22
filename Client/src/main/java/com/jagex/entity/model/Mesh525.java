@@ -135,18 +135,15 @@ public class Mesh525 extends Mesh {
 	            textureMappingP = new int[numTextures];
 	            textureMappingM = new int[numTextures];
 	            textureMappingN = new int[numTextures];
-	            if (l4 > 0) {
-	                kb = new int[l4];
-	                N = new int[l4];
-	                y = new int[l4];
-	                gb = new byte[l4];
-	                lb = new byte[l4];
-	                F = new byte[l4];
-	            }
-	            if (i5 > 0) {
-	                cb = new byte[i5];
-	                J = new byte[i5];
-	            }
+	            // Later decode indexes these arrays by absolute texture index.
+	            kb = new int[numTextures];
+	            N = new int[numTextures];
+	            y = new int[numTextures];
+	            gb = new byte[numTextures];
+	            lb = new byte[numTextures];
+	            F = new byte[numTextures];
+	            cb = new byte[numTextures];
+	            J = new byte[numTextures];
 	        }
 	        first.setPosition(l5);
 	        nc2.setPosition(k8);

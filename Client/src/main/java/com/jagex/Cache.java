@@ -96,14 +96,33 @@ public class Cache {
 	
 	
 	public Sprite getSprite(int id) {
+		if (id < 0) {
+			return null;
+		}
 		if(spriteCache.contains(id))
 			return spriteCache.get(id);
-		if(!indexedFileSystem.isOSRS())
-			throw new RuntimeException("Cannot grab sprite by ID on 317!");
-		Sprite sprite = Sprite.decode(ByteBuffer.wrap(spriteIndex.getArchive(id).readFile(0)));
-		spriteCache.put(id, sprite);
-		System.out.println("GETSPRITE " + id);
-		return sprite;
+		if (indexedFileSystem.is317() || spriteIndex == null) {
+			return null;
+		}
+		Archive archive = spriteIndex.getArchive(id);
+		if (archive == null) {
+			return null;
+		}
+		try {
+			byte[] data = archive.readFile(0);
+			if (data == null) {
+				return null;
+			}
+			Sprite sprite = Sprite.decode(ByteBuffer.wrap(data));
+			if (sprite == null) {
+				return null;
+			}
+			spriteCache.put(id, sprite);
+			return sprite;
+		} catch (Exception ex) {
+			log.debug("Failed to decode sprite {}", id, ex);
+		}
+		return null;
 	}
 	public final Index readFile(CacheFileType index){
 		try {

@@ -65,6 +65,16 @@ public class GameRasterizer extends GameRaster {
 		colourPalette = null;
 	}
 
+	private int safePaletteColour(int shade) {
+		int index = shade >> 8;
+		if (index < 0) {
+			index = 0;
+		} else if (index >= colourPalette.length) {
+			index = colourPalette.length - 1;
+		}
+		return colourPalette[index];
+	}
+
 	public void drawLine(int[] pixels, int i, int j, int k, int startX, int endX, int j1, int k1) {
 		if (approximateAlphaBlending) {
 			int l1;
@@ -99,7 +109,7 @@ public class GameRasterizer extends GameRaster {
 			}
 			if (currentAlpha == 0) {
 				while (--k >= 0) {
-					j = colourPalette[j1 >> 8];
+					j = safePaletteColour(j1);
 					j1 += l1;
 					pixels[i++] = j;
 					pixels[i++] = j;
@@ -108,7 +118,7 @@ public class GameRasterizer extends GameRaster {
 				}
 				k = endX - startX & 3;
 				if (k > 0) {
-					j = colourPalette[j1 >> 8];
+					j = safePaletteColour(j1);
 					do {
 						pixels[i++] = j;
 					} while (--k > 0);
@@ -118,7 +128,7 @@ public class GameRasterizer extends GameRaster {
 				int j2 = currentAlpha;
 				int l2 = 256 - currentAlpha;
 				while (--k >= 0) {
-					j = colourPalette[j1 >> 8];
+					j = safePaletteColour(j1);
 					j1 += l1;
 					j = ((j & 0xff00ff) * l2 >> 8 & 0xff00ff) + ((j & 0xff00) * l2 >> 8 & 0xff00);
 					pixels[i++] = j + ((pixels[i] & 0xff00ff) * j2 >> 8 & 0xff00ff)
@@ -132,7 +142,7 @@ public class GameRasterizer extends GameRaster {
 				}
 				k = endX - startX & 3;
 				if (k > 0) {
-					j = colourPalette[j1 >> 8];
+					j = safePaletteColour(j1);
 					j = ((j & 0xff00ff) * l2 >> 8 & 0xff00ff) + ((j & 0xff00) * l2 >> 8 & 0xff00);
 					do {
 						pixels[i++] = j + ((pixels[i] & 0xff00ff) * j2 >> 8 & 0xff00ff)
@@ -160,7 +170,7 @@ public class GameRasterizer extends GameRaster {
 		k = endX - startX;
 		if (currentAlpha == 0) {
 			do {
-				pixels[i++] = colourPalette[j1 >> 8];
+				pixels[i++] = safePaletteColour(j1);
 				j1 += i2;
 			} while (--k > 0);
 			return;
@@ -168,7 +178,7 @@ public class GameRasterizer extends GameRaster {
 		int k2 = currentAlpha;
 		int i3 = 256 - currentAlpha;
 		do {
-			j = colourPalette[j1 >> 8];
+			j = safePaletteColour(j1);
 			j1 += i2;
 			j = ((j & 0xff00ff) * i3 >> 8 & 0xff00ff) + ((j & 0xff00) * i3 >> 8 & 0xff00);
 			pixels[i++] = j + ((pixels[i] & 0xff00ff) * k2 >> 8 & 0xff00ff) + ((pixels[i] & 0xff00) * k2 >> 8 & 0xff00);

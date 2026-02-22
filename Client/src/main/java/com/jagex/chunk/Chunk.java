@@ -200,17 +200,22 @@ public class Chunk {
 						if(definition != null) {
 							if(definition.getAreaId() != -1) {
 								RSArea area = RSAreaLoader.get(definition.getAreaId());
-								int function = area.getSpriteId();
-								
-								if (function >= 0) {
-									int viewportX = x;
-									int viewportY = y;
-			
-									mapObjectSprites[mapObjectCount] = client.getCache().getSprite(function);
-									mapObjectSelected[mapObjectCount] = selected;
-									mapObjectX[mapObjectCount] = viewportX;
-									mapObjectY[mapObjectCount] = viewportY;
-									mapObjectCount++;
+								if (area != null) {
+									int function = area.getSpriteId();
+									if (function >= 0) {
+										Sprite sprite = client.getCache().getSprite(function);
+										if (sprite == null) {
+											continue;
+										}
+										int viewportX = x;
+										int viewportY = y;
+				
+										mapObjectSprites[mapObjectCount] = sprite;
+										mapObjectSelected[mapObjectCount] = selected;
+										mapObjectX[mapObjectCount] = viewportX;
+										mapObjectY[mapObjectCount] = viewportY;
+										mapObjectCount++;
+									}
 								}
 							} else {
 

@@ -157,23 +157,21 @@ public class Mesh622 extends Mesh {
         int[] texTrianglesPoint1 = null;
         int[] texTrianglesPoint2 = null;
         int[] texTrianglesPoint3 = null;
-        if (numTexTriangles > 0) {
-            texTrianglesPoint1 = new int[numTexTriangles];
-            texTrianglesPoint2 = new int[numTexTriangles];
-            texTrianglesPoint3 = new int[numTexTriangles];
-            if (l4 > 0) {
-                kb = new int[l4];
-                N = new int[l4];
-                y = new int[l4];
-                gb = new byte[l4];
-                lb = new byte[l4];
-                F = new byte[l4];
-            }
-            if (i5 > 0) {
-                cb = new byte[i5];
-                J = new byte[i5];
-            }
-        }
+	        if (numTexTriangles > 0) {
+	            texTrianglesPoint1 = new int[numTexTriangles];
+	            texTrianglesPoint2 = new int[numTexTriangles];
+	            texTrianglesPoint3 = new int[numTexTriangles];
+	            // Texture decode uses absolute texture-triangle indices later.
+	            // Allocate per texture triangle to avoid sparse-index OOB on mixed texture types.
+	            kb = new int[numTexTriangles];
+	            N = new int[numTexTriangles];
+	            y = new int[numTexTriangles];
+	            gb = new byte[numTexTriangles];
+	            lb = new byte[numTexTriangles];
+	            F = new byte[numTexTriangles];
+	            cb = new byte[numTexTriangles];
+	            J = new byte[numTexTriangles];
+	        }
         nc1.setPosition(l5);
         nc2.setPosition(k8);
         nc3.setPosition(l8);

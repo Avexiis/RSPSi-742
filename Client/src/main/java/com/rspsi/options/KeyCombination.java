@@ -47,8 +47,9 @@ public class KeyCombination {
 
 	public boolean valid(EventType<KeyEvent> event){
 		boolean hasEventFilter = !validEvents.isEmpty();
-		if(!requiredKeys.isEmpty())
-			log.info("Checking for event | {} | {} | {} | {} | {}", event, validEvents.isEmpty(), exclusivelyPressed, validEvents.contains(event), requiredKeys);
+		if(log.isTraceEnabled() && !requiredKeys.isEmpty()) {
+			log.trace("Checking key combination event {} {} {} {} {}", event, validEvents.isEmpty(), exclusivelyPressed, validEvents.contains(event), requiredKeys);
+		}
 		if(!hasEventFilter) {
 			return exclusivelyPressed ? KeyboardState.exclusivePressed(requiredKeys) : KeyboardState.nonExclusivePressed(requiredKeys);
 		} else {

@@ -87,14 +87,17 @@ public class MeshLoader {
 
 			}
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			log.error("Failed decoding model {} ({})", id, revision, ex);
 		}
-		mesh.id = id;
-		mesh.revision = revision;
-
-		loadedMeshes.put(id, mesh);
 
 		awaitingLoad.remove(Integer.valueOf(id));
+		if (mesh == null) {
+			return null;
+		}
+
+		mesh.id = id;
+		mesh.revision = revision;
+		loadedMeshes.put(id, mesh);
 
 		return mesh;
 	}
@@ -106,7 +109,9 @@ public class MeshLoader {
 		boolean alreadyLoading = awaitingLoad.contains(id);
 		if (!alreadyLoading) {
 			awaitingLoad.add(id);
-			System.out.println("Requested model " + id);
+			if (log.isTraceEnabled()) {
+				log.trace("Requested model {}", id);
+			}
 			provider.requestFile(CacheFileType.MODEL, id);
 			return false;
 		}

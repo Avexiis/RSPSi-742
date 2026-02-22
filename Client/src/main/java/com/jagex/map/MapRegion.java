@@ -131,10 +131,11 @@ public final class MapRegion {
 
 	public static boolean objectReady(int objectId, int type) {
 		ObjectDefinition definition = ObjectDefinitionLoader.lookup(objectId);
-		if (type == 11) {
-			type = 10;
-		} else if (type >= 5 && type <= 8) {
+		if (type >= 5 && type <= 8) {
 			type = 4;
+		}
+		if (type == 11) {
+			return definition.ready(10) || definition.ready(11);
 		}
 
 		return definition.ready(type);
@@ -1178,16 +1179,27 @@ public final class MapRegion {
 					deco.setMinimapFunction(Client.mapFunctions[definition.getMinimapFunction()]);
 				} else if (deco != null && definition.getAreaId() >= 0 && definition.getModelIds() != null && definition.getModelIds()[0] == 111) {
 					RSArea area = RSAreaLoader.get(definition.getAreaId());
-					int func = area.getSpriteId();
-					deco.setMinimapFunction(Client.getSingleton().getCache().getSprite(func));
+					if (area != null) {
+						int func = area.getSpriteId();
+						if (func >= 0) {
+							com.jagex.cache.graphics.Sprite sprite = Client.getSingleton().getCache().getSprite(func);
+							if (sprite != null) {
+								deco.setMinimapFunction(sprite);
+							}
+						}
+					}
 				}
 
 		} else if (type == 10 || type == 11) {
+			int modelType = type;
 			Renderable object;
 			if (definition.getAnimation() == -1 && definition.getMorphisms() == null) {
-				object = definition.modelAt(10, orientation, centre, east, northEast, north, -1);
+				object = definition.modelAt(modelType, orientation, centre, east, northEast, north, -1);
+				if (object == null && modelType == 11) {
+					object = definition.modelAt(10, orientation, centre, east, northEast, north, -1);
+				}
 			} else {
-				object = new RenderableObject(id, orientation, 10, centre, east, northEast, north,
+				object = new RenderableObject(id, orientation, modelType, centre, east, northEast, north,
 						definition.getAnimation(), true);
 			}
 
@@ -1214,7 +1226,10 @@ public final class MapRegion {
 					if (object instanceof Mesh) {
 						model = (Mesh) object;
 					} else {
-						model = definition.modelAt(10, orientation, centre, east, northEast, north, -1);
+						model = definition.modelAt(modelType, orientation, centre, east, northEast, north, -1);
+						if (model == null && modelType == 11) {
+							model = definition.modelAt(10, orientation, centre, east, northEast, north, -1);
+						}
 					}
 
 					if (model != null) {

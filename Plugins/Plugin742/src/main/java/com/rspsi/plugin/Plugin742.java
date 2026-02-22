@@ -1,6 +1,7 @@
 package com.rspsi.plugin;
 
 import org.displee.cache.index.Index;
+import org.displee.cache.index.archive.Archive;
 
 import com.jagex.Client;
 import com.jagex.cache.loader.anim.FrameLoader;
@@ -82,7 +83,11 @@ public class Plugin742 implements ClientPlugin {
 //		animDefLoader.init(configIndex.getArchive(12));
 //		graphicLoader.init(configIndex.getArchive(13));
 
-		areaLoader.init(configIndex.getArchive(35));
+		Archive areaArchive = configIndex.getArchive(36);
+		if (areaArchive == null) {
+			areaArchive = configIndex.getArchive(35);
+		}
+		areaLoader.init(areaArchive);
 
 //		Index skeletonIndex = client.getCache().readFile(CacheFileType.SKELETON);
 //		skeletonLoader.init(skeletonIndex);

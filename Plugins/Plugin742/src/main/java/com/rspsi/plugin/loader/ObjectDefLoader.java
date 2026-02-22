@@ -14,23 +14,21 @@ import org.displee.cache.index.archive.Archive;
 import org.displee.cache.index.archive.file.File;
 import org.displee.utilities.Miscellaneous;
 
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 @Slf4j
 public class ObjectDefLoader extends ObjectDefinitionLoader {
 
 	private Map<Integer, ObjectDefinition> definitions = Maps.newHashMap();
-	
+
 	@Override
 	public void init(Archive archive) {
 
 	}
-	
+
 	@Override
 	public void init(Buffer data, Buffer indexBuffer) {
 
@@ -39,6 +37,11 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 	private int size;
 
 	public void decodeObjects(Index index) {
+		definitions.clear();
+		if (index == null || index.getLastArchive() == null || index.getLastArchive().getLastFile() == null) {
+			size = 0;
+			return;
+		}
 		size = index.getLastArchive().getId() * 256 + index.getLastArchive().getLastFile().getId() + 1;
 		for (int id = 0; id < size; id++) {
 			int archiveId = Miscellaneous.getConfigArchive(id, 8);
@@ -51,7 +54,7 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 						ObjectDefinition def = decode(id, ByteBuffer.wrap(file.getData()));
 						definitions.put(id, def);
 					} catch (Exception ex) {
-						ex.printStackTrace();
+						log.error("Failed decoding object definition {}", id, ex);
 					}
 				}
 			}
@@ -62,8 +65,8 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 		ObjectDefinition definition = new ObjectDefinition();
 		definition.reset();
 		definition.setId(id);
-		int interactive = -1;
 		int lastOpcode = -1;
+		boolean explicitInteractive = false;
 		try {
 			for (;;) {
 				int opcode = buffer.get() & 0xff;
@@ -72,41 +75,47 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 					break;
 				if (opcode == 1) {
 					int typeSize = buffer.get() & 0xff;
-					int[][] modelIds = new int[typeSize][];
-					int[] modelTypes = new int[typeSize];
+					int[] modelIds = new int[Math.max(1, typeSize)];
+					int[] modelTypes = new int[Math.max(1, typeSize)];
+					int totalModels = 0;
 					for (int type = 0; type < typeSize; type++) {
-						modelTypes[type] = buffer.get();
+						int modelType = buffer.get();
 						int modelsLength = buffer.get() & 0xff;
-						modelIds[type] = new int[modelsLength];
-						for (int model = 0; modelsLength > model; model++) {
-							modelIds[type][model] = readBigSmart(buffer);
+						for (int model = 0; model < modelsLength; model++) {
+							int modelId = readSmart2Or4Null(buffer);
+							if (modelId < 0) {
+								continue;
+							}
+							if (totalModels >= modelIds.length) {
+								int newSize = Math.max(modelIds.length * 2, totalModels + 1);
+								modelIds = Arrays.copyOf(modelIds, newSize);
+								modelTypes = Arrays.copyOf(modelTypes, newSize);
+							}
+							modelIds[totalModels] = modelId;
+							modelTypes[totalModels] = modelType;
+							totalModels++;
 						}
 					}
-					definition.setModelIds(IntStream.range(0, modelIds.length).map(index -> modelIds[index][0]).toArray());
-					definition.setModelTypes(modelTypes);
+					if (totalModels == 0) {
+						definition.setModelIds(null);
+						definition.setModelTypes(null);
+					} else {
+						definition.setModelIds(Arrays.copyOf(modelIds, totalModels));
+						definition.setModelTypes(Arrays.copyOf(modelTypes, totalModels));
+					}
 				} else if (opcode == 5) {
-					int typeSize = buffer.get() & 0xff;
-					int[][] modelIds = new int[typeSize][];
-					int[] modelTypes = new int[typeSize];
-					for (int type = 0; type < typeSize; type++) {
-						modelTypes[type] = buffer.get();
-						int modelsLength = buffer.get() & 0xff;
-						modelIds[type] = new int[modelsLength];
-						for (int model = 0; modelsLength > model; model++) {
-							modelIds[type][model] = readBigSmart(buffer);
+					int count = buffer.get() & 0xff;
+					int[] modelIds = new int[Math.max(1, count)];
+					int totalModels = 0;
+					for (int i = 0; i < count; i++) {
+						int modelId = readSmart2Or4Null(buffer);
+						if (modelId < 0) {
+							continue;
 						}
+						modelIds[totalModels++] = modelId;
 					}
-					definition.setModelIds(IntStream.range(0, modelIds.length).map(index -> modelIds[index][0]).toArray());
-					definition.setModelTypes(modelTypes);
-
-					int length = buffer.get() & 0xff;
-					for (int index = 0; index < length; index++) {
-						buffer.get();
-						int length2 = buffer.get() & 0xff;
-						for (int i = 0; i < length2; i++) {
-							int s = buffer.getShort() & 0xff;
-						}
-					}
+					definition.setModelIds(totalModels == 0 ? null : Arrays.copyOf(modelIds, totalModels));
+					definition.setModelTypes(null);
 				} else if (opcode == 2) {
 					definition.setName(ByteBufferUtils.getOSRSString(buffer));
 				} else if (opcode == 14) {
@@ -118,10 +127,9 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 				} else if (opcode == 18) {
 					definition.setImpenetrable(false);
 				} else if (opcode == 19) { // x
-					interactive = buffer.get() & 0xff;
-					if (interactive == 1) {
-						definition.setInteractive(true);
-					}
+					explicitInteractive = true;
+					int interactive = buffer.get() & 0xff;
+					definition.setInteractive(interactive == 1);
 				} else if (opcode == 21) { // x
 					definition.setContouredGround(true);
 				} else if (opcode == 22) {
@@ -129,11 +137,7 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 				} else if (opcode == 23) {
 					definition.setOccludes(true);
 				} else if (opcode == 24) {
-					int animation = buffer.getShort() & 0xffff;
-					if (animation == 65535) {
-						animation = -1;
-					}
-					definition.setAnimation(-1);
+					definition.setAnimation(readSmart2Or4Null(buffer));
 				} else if (opcode == 27) { // x
 					//setInteractType(1);
 				} else if (opcode == 28) { // x
@@ -163,11 +167,15 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 					definition.setOriginalColours(originalColours);
 					definition.setReplacementColours(replacementColours);
 				} else if (opcode == 41) {
-					int i = buffer.get() & 0xff;
-					for (int x = 0; x < i; x++) {
-						int i1 = buffer.getShort() & 0xffff;
-						int i2 = buffer.getShort() & 0xffff;
+					int count = buffer.get() & 0xff;
+					int[] retextureFrom = new int[count];
+					int[] retextureTo = new int[count];
+					for (int i = 0; i < count; i++) {
+						retextureFrom[i] = buffer.getShort() & 0xffff;
+						retextureTo[i] = buffer.getShort() & 0xffff;
 					}
+					definition.setRetextureToFind(retextureFrom);
+					definition.setTextureToReplace(retextureTo);
 				} else if (opcode == 42) {
 					int i = buffer.get() & 0xff;
 					for (int index = 0; index < i; index++)
@@ -177,7 +185,8 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 				} else if (opcode == 45) {
 					int i = buffer.getShort() & 0xffff;
 				} else if (opcode == 60) {
-					definition.setMinimapFunction(buffer.getShort() & 0xffff);
+					int minimapFunction = buffer.getShort() & 0xFFFF;
+					definition.setMinimapFunction(minimapFunction == 0xFFFF ? -1 : minimapFunction);
 				} else if (opcode == 62) {
 					definition.setInverted(true);
 				} else if (opcode == 64) {
@@ -189,15 +198,16 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 				} else if (opcode == 67) {
 					definition.setScaleZ(buffer.getShort() & 0xffff);
 				} else if (opcode == 68) {
-					definition.setMapscene(buffer.getShort() & 0xffff);
+					int mapscene = buffer.getShort() & 0xFFFF;
+					definition.setMapscene(mapscene == 0xFFFF ? -1 : mapscene);
 				} else if (opcode == 69) { // x
 					definition.setSurroundings(buffer.get() & 0xff);
 				} else if (opcode == 70) {
-					definition.setTranslateX(buffer.getShort() & 0xffff);
+					definition.setTranslateX(buffer.getShort() << 2);
 				} else if (opcode == 71) { // x
-					definition.setTranslateY(buffer.getShort() & 0xffff);
+					definition.setTranslateY(buffer.getShort() << 2);
 				} else if (opcode == 72) {
-					definition.setTranslateZ(buffer.getShort() & 0xffff);
+					definition.setTranslateZ(buffer.getShort() << 2);
 				} else if (opcode == 73) { // x
 					definition.setObstructsGround(true);
 				} else if (opcode == 74) { // x
@@ -215,17 +225,12 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 					}
 					int var3 = -1;
 					if (opcode == 92) {
-						var3 = buffer.getShort() & 0xffff;
-						if (var3 == 65535)
-							var3 = -1;
+						var3 = readSmart2Or4Null(buffer);
 					}
 					int count = buffer.get() & 0xff;
 					int[] morphisms = new int[count + 2];
 					for (int i = 0; i <= count; i++) {
-						morphisms[i] = buffer.getShort() & 0xffff;
-						if (morphisms[i] == 65535) {
-							morphisms[i] = -1;
-						}
+						morphisms[i] = readSmart2Or4Null(buffer);
 					}
 					morphisms[count + 1] = var3;
 					definition.setMorphisms(morphisms);
@@ -238,10 +243,11 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 					buffer.getShort();
 					buffer.getShort();
 					buffer.get();
-					int count = buffer.get();
+					int count = buffer.get() & 0xff;
 					for (int index = 0; index < count; index++)
 						buffer.getShort();
 				} else if (opcode == 81) { // x
+					definition.setContouredGround(true);
 					buffer.get();
 				} else if(opcode == 82) {
 					// aBoolean3891 = true;
@@ -252,10 +258,12 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 				} else if(opcode == 91) {
 					//aBoolean3873 = true;
 				} else if (opcode == 93) {
+					definition.setContouredGround(true);
 					buffer.getShort();
 				} else if(opcode == 94) {
-					//aByte3912 = (byte) 4;
+					definition.setContouredGround(true);
 				} else if (opcode == 95) {
+					definition.setContouredGround(true);
 					buffer.getShort();
 				} else if(opcode == 97) {
 					// aBoolean3866 = true;
@@ -270,19 +278,30 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 				} else if (opcode == 101) {
 					buffer.get();
 				} else if (opcode == 102) {
-					buffer.getShort();
+					int mapscene = buffer.getShort() & 0xFFFF;
+					definition.setMapscene(mapscene == 0xFFFF ? -1 : mapscene);
 				} else if(opcode == 103) {
-					// thirdInt = 0;
+					definition.setOccludes(false);
 				} else if (opcode == 104) {
 					buffer.get();
+				} else if (opcode == 105) {
+					// field6511 in 742 LocType
 				} else if (opcode == 106) {
 					int size = buffer.get() & 0xff;
+					int fallbackAnimation = -1;
 					for (int index = 0; index < size; index++) {
-						int i = buffer.getShort() & 0xff;
-						int i2 = buffer.get() & 0xff;
+						int animationId = readSmart2Or4Null(buffer);
+						if (animationId != -1 && fallbackAnimation == -1) {
+							fallbackAnimation = animationId;
+						}
+						buffer.get();
+					}
+					if (fallbackAnimation != -1) {
+						definition.setAnimation(fallbackAnimation);
 					}
 				} else if (opcode == 107) {
-					buffer.getShort();
+					int areaId = buffer.getShort() & 0xFFFF;
+					definition.setAreaId(areaId == 0xFFFF ? -1 : areaId);
 				} else if (opcode >= 150 && opcode < 155) {
 					ByteBufferUtils.getOSRSString(buffer);
 				} else if (opcode == 160) {
@@ -291,6 +310,7 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 						buffer.getShort();
 					}
 				} else if (opcode == 162) {
+					definition.setContouredGround(true);
 					buffer.getInt();
 				} else if (opcode == 163) {
 					buffer.get();
@@ -320,6 +340,10 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 					// boolean ub = true;
 				} else if (opcode == 178) {
 					buffer.get();
+				} else if (opcode == 189) {
+					// field6472 in 742 LocType
+				} else if (opcode >= 190 && opcode < 196) {
+					buffer.getShort();
 				} else if (opcode == 249) {
 					int var1 = buffer.get() & 0xff;
 					for (int var2 = 0; var2 < var1; var2++) {
@@ -332,19 +356,45 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 						}
 					}
 				} else {
-					System.out.println("id: " + id + " unknown opcode: " + opcode + " last opcode: " + lastOpcode);
+					log.debug("loc {} unknown opcode {} after {}", id, opcode, lastOpcode);
 				}
 				lastOpcode = opcode;
 			}
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			log.error("Failed decoding loc {} at opcode {}", id, lastOpcode, ex);
+		}
+
+		if (!explicitInteractive) {
+			boolean interactive = false;
+			if (definition.getModelIds() != null) {
+				int[] modelTypes = definition.getModelTypes();
+				if (modelTypes == null) {
+					interactive = true;
+				} else {
+					interactive = true;
+					for (int modelType : modelTypes) {
+						if (modelType != 10) {
+							interactive = false;
+							break;
+						}
+					}
+				}
+			}
+			if (!interactive && definition.getInteractions() != null) {
+				for (String action : definition.getInteractions()) {
+					if (action != null) {
+						interactive = true;
+						break;
+					}
+				}
+			}
+			definition.setInteractive(interactive);
 		}
 
 		if (definition.isHollow()) {
 			definition.setSolid(false);
 			definition.setImpenetrable(false);
 		}
-		definition.setDelayShading(false);
 
 		if (definition.getSupportItems() == -1) {
 			definition.setSupportItems(definition.isSolid() ? 1 : 0);
@@ -352,20 +402,26 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 		return definition;
 	}
 
-	private int readBigSmart(ByteBuffer buffer) {
-		int peek = buffer.get(buffer.position());
-		if (peek >= 0) {
-			return buffer.getShort() & 0xFFFF;
+	private int readSmart2Or4Null(ByteBuffer buffer) {
+		if (buffer.get(buffer.position()) < 0) {
+			return buffer.getInt() & Integer.MAX_VALUE;
 		}
-		return buffer.getInt() & Integer.MAX_VALUE;
+		int value = buffer.getShort() & 0xFFFF;
+		return value == 0x7FFF ? -1 : value;
 	}
 
 
 	@Override
 	public ObjectDefinition forId(int id) {
-		if (definitions.containsKey(id))
-			return definitions.get(id);
-		return forId(1);
+		ObjectDefinition definition = definitions.get(id);
+		if (definition != null) {
+			return definition;
+		}
+		ObjectDefinition missing = new ObjectDefinition();
+		missing.reset();
+		missing.setId(id);
+		definitions.put(id, missing);
+		return missing;
 	}
 
 	@Override
@@ -376,20 +432,40 @@ public class ObjectDefLoader extends ObjectDefinitionLoader {
 	@Override
 	public ObjectDefinition morphism(int id) {
 		ObjectDefinition def = forId(id);
+		if (def == null || def.getMorphisms() == null || def.getMorphisms().length == 0) {
+			return null;
+		}
+		Client client = Client.getSingleton();
+		if (client == null || client.settings == null) {
+			return null;
+		}
+		int[] settings = client.settings;
 		int morphismIndex = -1;
 		if (def.getVarbit() != -1) {
 			VariableBits bits = VariableBitLoader.lookup(def.getVarbit());
 			if(bits == null){
-				log.info("varbit {} was null!", def.getVarbit());
+				log.debug("varbit {} was null while resolving morphism for {}", def.getVarbit(), id);
 				return null;
 			}
 			int variable = bits.getSetting();
+			if (variable < 0 || variable >= settings.length) {
+				return null;
+			}
 			int low = bits.getLow();
 			int high = bits.getHigh();
-			int mask = Client.BIT_MASKS[high - low];
-			morphismIndex = Client.getSingleton().settings[variable] >> low & mask;
-		} else if (def.getVarp() != -1)
-			morphismIndex = Client.getSingleton().settings[def.getVarp()];
+			int bitCount = high - low;
+			if (bitCount < 0 || bitCount >= Client.BIT_MASKS.length) {
+				return null;
+			}
+			int mask = Client.BIT_MASKS[bitCount];
+			morphismIndex = settings[variable] >> low & mask;
+		} else if (def.getVarp() != -1) {
+			int varp = def.getVarp();
+			if (varp < 0 || varp >= settings.length) {
+				return null;
+			}
+			morphismIndex = settings[varp];
+		}
 		int var2;
 		if(morphismIndex >= 0 && morphismIndex < def.getMorphisms().length) {
 			var2 = def.getMorphisms()[morphismIndex];

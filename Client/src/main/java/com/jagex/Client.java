@@ -510,29 +510,67 @@ public final class Client implements Runnable {
 
 				mapFunctions = Arrays.copyOf(functions, lastIdx + 1);
 			} else {
+				mapScenes = new Sprite[0];
 				try {
-					mapScenes = Sprite.unpackAndDecode(ByteBuffer.wrap(cache.readFile(CacheFileType.SPRITE).getArchive("mapscene").readFile(0)));
-				} catch (Exception e) {
-					mapScenes = new Sprite[0];
-				}
-				try {
-					int lastIdx = 0;
-
-					Archive graphics = cache.createArchive(4, "2d graphics");
-					Sprite[] functions = new Sprite[1000];
-					try {
-						for (int function = 0; function < functions.length; function++) {
-							functions[function] = new Sprite(graphics, "mapfunction", function);
-							lastIdx = function;
+					Archive spriteArchive = cache.readFile(CacheFileType.SPRITE).getArchive("mapscene");
+					if (spriteArchive != null) {
+						byte[] packed = spriteArchive.readFile(0);
+						if (packed != null) {
+							mapScenes = Sprite.unpackAndDecode(ByteBuffer.wrap(packed));
 						}
-					} catch (Exception ex) {
-						//ex.printStackTrace();
-						lastIdx = -1;
 					}
+				} catch (Exception ignored) {
+				}
+				if (mapScenes.length == 0) {
+					try {
+						Archive graphics = cache.createArchive(4, "2d graphics");
+						if (graphics != null) {
+							Sprite[] scenes = new Sprite[1000];
+							int lastScene = -1;
+							for (int scene = 0; scene < scenes.length; scene++) {
+								try {
+									scenes[scene] = new Sprite(graphics, "mapscene", scene);
+									lastScene = scene;
+								} catch (Exception ex) {
+									break;
+								}
+							}
+							mapScenes = lastScene == -1 ? new Sprite[0] : Arrays.copyOf(scenes, lastScene + 1);
+						}
+					} catch (Exception ignored) {
+					}
+				}
 
-					mapFunctions = lastIdx == -1 ? new Sprite[0] : Arrays.copyOf(functions, lastIdx + 1);
-				} catch(Exception ex){
-					mapFunctions = new Sprite[0];
+				mapFunctions = new Sprite[0];
+				try {
+					Archive spriteArchive = cache.readFile(CacheFileType.SPRITE).getArchive("mapfunction");
+					if (spriteArchive != null) {
+						byte[] packed = spriteArchive.readFile(0);
+						if (packed != null) {
+							mapFunctions = Sprite.unpackAndDecode(ByteBuffer.wrap(packed));
+						}
+					}
+				} catch (Exception ignored) {
+				}
+				if (mapFunctions.length == 0) {
+					try {
+						Archive graphics = cache.createArchive(4, "2d graphics");
+						if (graphics != null) {
+							Sprite[] functions = new Sprite[1000];
+							int lastIdx = -1;
+							for (int function = 0; function < functions.length; function++) {
+								try {
+									functions[function] = new Sprite(graphics, "mapfunction", function);
+									lastIdx = function;
+								} catch (Exception ex) {
+									break;
+								}
+							}
+
+							mapFunctions = lastIdx == -1 ? new Sprite[0] : Arrays.copyOf(functions, lastIdx + 1);
+						}
+					} catch (Exception ignored) {
+					}
 				}
 			}
 

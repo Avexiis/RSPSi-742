@@ -3,14 +3,11 @@ package com.rspsi.plugin.loader;
 import com.jagex.cache.config.VariableBits;
 import com.jagex.cache.loader.config.VariableBitLoader;
 import com.jagex.io.Buffer;
-import org.apache.commons.compress.utils.Lists;
 import org.displee.cache.index.Index;
 import org.displee.cache.index.archive.Archive;
 import org.displee.cache.index.archive.file.File;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 //Checked
@@ -26,7 +23,7 @@ public class VarbitLoaderOSRS extends VariableBitLoader {
 
     @Override
     public VariableBits forId(int id) {
-        if (id < 0 || id > bits.length)
+        if (bits == null || id < 0 || id >= bits.length)
             return null;
 
         return bits[id];
@@ -38,6 +35,11 @@ public class VarbitLoaderOSRS extends VariableBitLoader {
     }
 
     public void decodeVarbits(Index index) {
+        if (index == null || index.getArchives() == null) {
+            bits = new VariableBits[0];
+            count = 0;
+            return;
+        }
         int size = index.getArchives().length * 0x400;
         VariableBits[] varbits = new VariableBits[size];
 

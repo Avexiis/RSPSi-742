@@ -10,20 +10,22 @@ import com.jagex.cache.def.RSArea;
 import com.jagex.cache.loader.config.RSAreaLoader;
 import com.jagex.io.Buffer;
 import com.jagex.util.ByteBufferUtils;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class RSAreaLoaderOSRS extends RSAreaLoader {
 
 	private RSArea[] areas;
 	@Override
 	public RSArea forId(int id) {
-		if(id < 0 || id >= areas.length)
+		if (areas == null || id < 0 || id >= areas.length)
 			return null;
 		return areas[id];
 	}
 
 	@Override
 	public int count() {
-		return areas.length;
+		return areas == null ? 0 : areas.length;
 	}
 
 	@Override
@@ -38,6 +40,9 @@ public class RSAreaLoaderOSRS extends RSAreaLoader {
 			return;
 		}
 		areas = new RSArea[archive.getHighestId() + 1];
+		for (int i = 0; i < areas.length; i++) {
+			areas[i] = new RSArea(i);
+		}
 		for(File file : archive.getFiles()) {
 			if(file != null && file.getData() != null) {
 				RSArea area = decode(file.getId(), ByteBuffer.wrap(file.getData()));
@@ -54,9 +59,9 @@ public class RSAreaLoaderOSRS extends RSAreaLoader {
 				break;
 
 			if (opcode == 1) {
-				area.setSpriteId(ByteBufferUtils.getSmartInt(buffer));
+				area.setSpriteId(readSmart2Or4Null(buffer));
 			} else if (opcode == 2) {
-				area.setAnInt1967(ByteBufferUtils.getSmartInt(buffer));
+				area.setAnInt1967(readSmart2Or4Null(buffer));
 			} else if (opcode == 3) {
 				area.setName(ByteBufferUtils.getOSRSString(buffer));
 			} else if (opcode == 4) {
@@ -73,6 +78,11 @@ public class RSAreaLoaderOSRS extends RSAreaLoader {
 				}
 			} else if (opcode == 8) {
 				buffer.get();
+			} else if (opcode == 9) {
+				buffer.getShort();
+				buffer.getShort();
+				buffer.getInt();
+				buffer.getInt();
 			} else if (opcode >= 10 && opcode <= 14) {
 				area.getAStringArray1969()[opcode - 10] = ByteBufferUtils.getOSRSString(buffer);
 			} else if (opcode == 15) {
@@ -99,12 +109,19 @@ public class RSAreaLoaderOSRS extends RSAreaLoader {
 				area.setAnIntArray1982(anIntArray1982);
 				area.setAnIntArray1981(anIntArray1981);
 				area.setAByteArray1979(aByteArray1979);
+			} else if (opcode == 16) {
+				// field4802 = false in 742 MapElementType
 			} else if (opcode == 17) {
 				area.setAString1970(ByteBufferUtils.getOSRSString(buffer));
 			} else if (opcode == 18) {
-				ByteBufferUtils.getSmartInt(buffer);
+				readSmart2Or4Null(buffer);
 			} else if (opcode == 19) {
 				area.setAnInt1980(buffer.getShort() & 0xFFFF);
+			} else if (opcode == 20) {
+				buffer.getShort();
+				buffer.getShort();
+				buffer.getInt();
+				buffer.getInt();
 			} else if (opcode == 21) {
 				buffer.getInt();
 			} else if (opcode == 22) {
@@ -116,17 +133,31 @@ public class RSAreaLoaderOSRS extends RSAreaLoader {
 			} else if (opcode == 24) {
 				buffer.getShort();
 				buffer.getShort();
-			} else if (opcode == 25) {
-				ByteBufferUtils.getSmartInt(buffer);
-			} else if (opcode == 28) {
-				buffer.get();
-			} else if (opcode == 29) {
-				buffer.get();
-			} else if (opcode == 30) {
-				buffer.get();
+			} else if (opcode == 249) {
+				int count = buffer.get() & 0xFF;
+				for (int i = 0; i < count; i++) {
+					boolean stringValue = (buffer.get() & 0xFF) == 1;
+					ByteBufferUtils.readU24Int(buffer);
+					if (stringValue) {
+						ByteBufferUtils.getOSRSString(buffer);
+					} else {
+						buffer.getInt();
+					}
+				}
+			} else {
+				log.warn("Unknown map element opcode {} for area {}", opcode, id);
+				break;
 			}
 		}
 		return area;
+	}
+
+	private int readSmart2Or4Null(ByteBuffer buffer) {
+		if (buffer.get(buffer.position()) < 0) {
+			return buffer.getInt() & Integer.MAX_VALUE;
+		}
+		int value = buffer.getShort() & 0xFFFF;
+		return value == 0x7FFF ? -1 : value;
 	}
 
 	@Override

@@ -114,20 +114,22 @@ public final class ObjectDefinition {
 			if (model != null)
 				return model;
 
-			if (getModelIds() == null)
+			int[] modelIds = getModelIds();
+			if (modelIds == null)
 				return null;
 
 			boolean invert = inverted ^ orientation > 3;
-			int count = getModelIds().length;
+			int count = modelIds.length;
+			Mesh[] modelParts = count > 1 ? new Mesh[count] : null;
 			for (int index = 0; index < count; index++) {
-				int id = getModelIds()[index];
+				int modelId = modelIds[index];
 				if (invert) {
-					id |= 0x10000;
+					modelId |= 0x10000;
 				}
 
-				base = baseModels.get(id);
+				base = baseModels.get(modelId);
 				if (base == null) {
-					base = MeshLoader.getSingleton().lookup(id & 0xffff);
+					base = MeshLoader.getSingleton().lookup(modelId & 0xffff);
 					if (base == null) {
 						return null;
 					}
@@ -138,58 +140,68 @@ public final class ObjectDefinition {
 						//System.out.println("INVERTING");
 					}
 
-					baseModels.put(id, base);
+					baseModels.put(modelId, base);
 				}
 
 				if (count > 1) {
-					parts[index] = base;
+					modelParts[index] = base;
 				}
 			}
 
 			if (count > 1) {
-				base = new Mesh(count, parts);
+				base = new Mesh(count, modelParts);
 			}
 		} else {
-			int index = -1;
+			int[] allModelIds = getModelIds();
+			if (allModelIds == null) {
+				return null;
+			}
+			int[] matchedIndices = new int[modelTypes.length];
+			int matchedCount = 0;
 			for (int i = 0; i < modelTypes.length; i++) {
-				if (modelTypes[i] != type) {
-					continue;
+				if (i < allModelIds.length && modelTypes[i] == type && allModelIds[i] >= 0) {
+					matchedIndices[matchedCount++] = i;
 				}
-
-				index = i;
-				break;
 			}
 
-			if (index == -1)
+			if (matchedCount == 0)
 				return null;
 
-			key = frame + 1L << 32 | ((inverted ? 1 : 0) << 16) | id << 6 | index << 3 | orientation;
+			key = frame + 1L << 32 | ((inverted ? 1 : 0) << 16) | id << 6 | type << 3 | orientation;
+			for (int i = 0; i < matchedCount; i++) {
+				key = key * 67783L + allModelIds[matchedIndices[i]];
+			}
 			Mesh model = models.get(key);
 			if (model != null)
 				return model;
 
-			int id = getModelIds()[index];
 			boolean invert = inverted ^ orientation > 3;
-			if (invert) {
-				id |= 0x10000;
+			Mesh[] modelParts = matchedCount > 1 ? new Mesh[matchedCount] : null;
+			for (int i = 0; i < matchedCount; i++) {
+				int modelId = allModelIds[matchedIndices[i]];
+				if (invert) {
+					modelId |= 0x10000;
+				}
+				base = baseModels.get(modelId);
+				if (base == null) {
+					base = MeshLoader.getSingleton().lookup(modelId & 0xffff);
+					if (base == null) {
+						return null;
+					}
+					base = base.copy();
+					if (invert) {
+						base.invert();
+						//System.out.println("INVERTING");
+					}
+					baseModels.put(modelId, base);
+				}
+				if (matchedCount > 1) {
+					modelParts[i] = base;
+				}
 			}
 
-			base = baseModels.get(id);
-			if (base == null) {
-				base = MeshLoader.getSingleton().lookup(id & 0xffff);
-
-				if (base == null) {
-					return null;
-				}
-
-				base = base.copy();
-
-				if (invert) {
-					base.invert();
-					//System.out.println("INVERTING");
-				}
-
-				baseModels.put(id, base);
+			if (matchedCount > 1) {
+				base = new Mesh(matchedCount, modelParts);
 			}
 		}
 
@@ -312,8 +324,20 @@ public final class ObjectDefinition {
 
 		for (int index = 0; index < modelTypes.length; index++) {
 			if (modelTypes[index] == type) {
-				boolean ready = MeshLoader.getSingleton().loaded(getModelIds()[index]);
-
+				int[] modelIds = getModelIds();
+				if (modelIds == null) {
+					modelTries = 0;
+					return true;
+				}
+				boolean ready = true;
+				for (int i = index; i < modelTypes.length; i++) {
+					if (modelTypes[i] == type && i < modelIds.length) {
+						int modelId = modelIds[i];
+						if (modelId >= 0) {
+							ready &= MeshLoader.getSingleton().loaded(modelId);
+						}
+					}
+				}
 				if(ready)
 					modelTries = 0;
 				else
@@ -346,7 +370,20 @@ public final class ObjectDefinition {
 
 		for (int index = 0; index < modelTypes.length; index++) {
 			if (modelTypes[index] == type) {
-				boolean ready = MeshLoader.getSingleton().loaded(getModelIds()[index]);
+				int[] modelIds = getModelIds();
+				if (modelIds == null) {
+					modelTries = 0;
+					return true;
+				}
+				boolean ready = true;
+				for (int i = index; i < modelTypes.length; i++) {
+					if (modelTypes[i] == type && i < modelIds.length) {
+						int modelId = modelIds[i];
+						if (modelId >= 0) {
+							ready &= MeshLoader.getSingleton().loaded(modelId);
+						}
+					}
+				}
 
 				if(ready)
 					modelTries = 0;
