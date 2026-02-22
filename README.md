@@ -1,4 +1,8 @@
 # RSPSi-742
+<div align="left">
+  <video src="https://i.imgur.com/bxjQ9k1.mp4" controls width="600"></video>
+</div>
+
 **<u>The following has been changed from the original**</u><br><br>
 Added client-side 742 compatibility in:
 - `Cache.java`
@@ -30,9 +34,12 @@ All other plugin files remain the same as they were in the 667 build.
 - This has only been tested using the below resources. Results with other caches may vary.
 
 # Disclaimers
-- Some models may appear incorrect or have missing textures. This was somewhat present in the 667 build, but even moreso in 742.
-- This project is at best an alpha, it pushes the limit of what the internal client can accomplish.
+- This build is **<u>EXPERIMENTAL</u>**, it pushes the limit of what the internal client can achieve.
+- This build **WILL** fire console errors while you work, mostly around mesh face issues. The majority of them can be ignored unless workspace issues occur.
+- Some models may appear incorrect or have missing textures. This was somewhat present in the 667 build, but even more so in 742.
+- Your real client will not fail to decode meshes the same way this might, however, always double-check once you import that nothing was missed or removed.
 - If an estimate for "how functional is it?" were given, it would be `75%-80%` due to the remaining bugs.
+- **<u><i>Always back up your cache before importing map files to it!</i></u>**
   
 # Resources
 - [742 Cache](https://archive.openrs2.org/caches/runescape/544/disk.zip)
