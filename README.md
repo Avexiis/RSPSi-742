@@ -41,7 +41,7 @@ All other plugin files remain the same as they were in the 667 build.
   <br><br>
 - Your real client will not fail to decode meshes the same way this might, however, always double-check once you import that nothing was missed or removed.
   <br><br>
-- RSPSi does not contain a method to modify under-map landscape. This is usually (I think?) a third data file. As it sits, maps with water will not have under-map landscape generated and will appear incorrect with HD water enabled.
+- RSPSi does not contain a method to modify under-map landscape. This is usually (I think?) a third data file. As it sits, maps with water will not have under-map landscape generated and will appear incorrect with HD water enabled (Only if you **ADD** water in a map with **NONE**!)
   <br><br>
 - If an estimate for "how functional is this?" were given, it would be `75%-80%` due to the remaining bugs.
   <br><br>
